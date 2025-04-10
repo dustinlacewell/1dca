@@ -45,8 +45,8 @@ export class Canvas2DRenderer implements BaseRenderer {
     this.ctx.scale(this.dpr, this.dpr);
   }
 
-  updateViewport(options: any): void {
-    // Removed the options field
+  updateViewport(): void {
+    // No options needed
   }
 
   render(state: CellState): void {

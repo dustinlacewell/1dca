@@ -1,5 +1,5 @@
 import { BaseWebGLRenderer } from './BaseWebGLRenderer';
-import { BaseRenderer, CellState, ViewportOptions } from './BaseRenderer';
+import { BaseRenderer, CellState } from './BaseRenderer';
 
 // WebGL1 compatible shaders
 const SIMPLE_VERTEX_SHADER = `
@@ -93,7 +93,7 @@ export class SimpleQuadRenderer extends BaseWebGLRenderer implements BaseRendere
         }
     }
 
-    updateViewport(_options: ViewportOptions): void {
+    updateViewport(_options: CellState['viewport']): void {
         // Nothing needed for this simple renderer
     }
 
