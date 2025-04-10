@@ -1,6 +1,6 @@
 import { BaseRenderer } from './BaseRenderer';
 import { Canvas2DRenderer } from './Canvas2DRenderer';
-import { WebGLRenderer } from './WebGLRenderer';
+import { WebGLComputeRenderer } from './WebGLComputeRenderer';
 
 export type RendererType = 'webgl' | 'canvas2d';
 
@@ -43,20 +43,29 @@ function isWebGL2Supported(): boolean {
 /**
  * Create a renderer instance based on the specified type or available capabilities
  */
-export function createRenderer(preferredType?: RendererType): BaseRenderer {
+export function createRenderer(preferredType?: RendererType, canvas?: HTMLCanvasElement): BaseRenderer {
     // If WebGL is supported and either no preference or WebGL is preferred, use WebGL
     if ((preferredType === 'webgl' || !preferredType) && isWebGL2Supported()) {
         try {
-            return new WebGLRenderer();
+            console.log('Creating WebGL Compute Renderer');
+            const renderer = new WebGLComputeRenderer();
+            if (canvas) {
+                renderer.initialize(canvas);
+            }
+            return renderer;
         } catch (e) {
             console.warn('WebGL renderer creation failed:', e);
             // Fall back to Canvas2D
-            return new Canvas2DRenderer();
         }
     }
 
-    // Use Canvas2D renderer as fallback
-    return new Canvas2DRenderer();
+    // Fall back to Canvas2D renderer
+    console.log('Creating Canvas2D Renderer');
+    const renderer = new Canvas2DRenderer();
+    if (canvas) {
+        renderer.initialize(canvas);
+    }
+    return renderer;
 }
 
 // Export the support check for UI components

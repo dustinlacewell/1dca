@@ -13,6 +13,7 @@ export function Canvas() {
     cells,
     previousGenerations,
     generation,
+    rule,
     isPlaying,
     cellSize,
     cellMargin,
@@ -79,18 +80,20 @@ export function Canvas() {
       rendererRef.current = renderer;
 
       // Initial render
+      const viewport = {
+        width: canvasRef.current.width,
+        height: canvasRef.current.height,
+        cellSize,
+        cellMargin,
+        renderMargin,
+        maxVisibleGenerations
+      };
       renderer.render({
         cells,
         previousGenerations,
         generation,
-        viewport: {
-          cellSize,
-          cellMargin,
-          maxCells,
-          renderWidth,
-          renderMargin,
-          maxVisibleGenerations
-        }
+        rule,
+        viewport
       });
 
       console.log('Initial render complete');
@@ -125,24 +128,26 @@ export function Canvas() {
       canvas.width = rect.width;
       canvas.height = rect.height;
 
+      const viewport = {
+        width: canvasRef.current.width,
+        height: canvasRef.current.height,
+        cellSize,
+        cellMargin,
+        renderMargin,
+        maxVisibleGenerations
+      };
       renderer.render({
         cells,
         previousGenerations,
         generation,
-        viewport: {
-          cellSize,
-          cellMargin,
-          maxCells,
-          renderWidth,
-          renderMargin,
-          maxVisibleGenerations
-        }
+        rule,
+        viewport
       });
     };
 
     window.addEventListener('resize', updateCanvasSize);
     return () => window.removeEventListener('resize', updateCanvasSize);
-  }, [activeRenderer, cells, previousGenerations, generation, cellSize, cellMargin, maxCells, renderWidth, renderMargin, maxVisibleGenerations]);
+  }, [activeRenderer, cells, previousGenerations, generation, cellSize, cellMargin, maxCells, renderWidth, renderMargin, maxVisibleGenerations, rule]);
 
   // Handle state updates
   useEffect(() => {
@@ -163,20 +168,22 @@ export function Canvas() {
       }
     });
 
+    const viewport = {
+      width: canvasRef.current.width,
+      height: canvasRef.current.height,
+      cellSize,
+      cellMargin,
+      renderMargin,
+      maxVisibleGenerations
+    };
     renderer.render({
       cells,
       previousGenerations,
       generation,
-      viewport: {
-        cellSize,
-        cellMargin,
-        maxCells,
-        renderWidth,
-        renderMargin,
-        maxVisibleGenerations
-      }
+      rule,
+      viewport
     });
-  }, [cells, previousGenerations, generation, cellSize, cellMargin, maxCells, renderWidth, renderMargin, maxVisibleGenerations]);
+  }, [cells, previousGenerations, generation, cellSize, cellMargin, maxCells, renderWidth, renderMargin, maxVisibleGenerations, rule]);
 
   // Handle animation frame updates
   useEffect(() => {
@@ -184,21 +191,32 @@ export function Canvas() {
     if (!renderer || !isPlaying) return;
 
     let lastTime = 0;
+    let accumulatedTime = 0;
     let animationFrameId: number;
 
     const animate = (currentTime: number) => {
-      if (currentTime - lastTime > 1000 / speed) {
-        step();
+      if (lastTime === 0) {
         lastTime = currentTime;
       }
+
+      const deltaTime = currentTime - lastTime;
+      lastTime = currentTime;
+      accumulatedTime += deltaTime;
+
+      // Calculate how many steps we should take based on speed
+      // speed is in generations per second, so convert to ms
+      const timePerStep = 1000 / speed;
+      
+      while (accumulatedTime >= timePerStep) {
+        step();
+        accumulatedTime -= timePerStep;
+      }
+
       animationFrameId = requestAnimationFrame(animate);
     };
 
     animationFrameId = requestAnimationFrame(animate);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
+    return () => cancelAnimationFrame(animationFrameId);
   }, [isPlaying, speed, step]);
 
   return (

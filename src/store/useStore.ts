@@ -42,9 +42,9 @@ interface AutomatonState {
   setActiveRenderer: (type: RendererType) => void;
 }
 
-const DEFAULT_CELL_SIZE = 4;
-const DEFAULT_SPEED = 10;
-const DEFAULT_RULE = 30;
+const DEFAULT_CELL_SIZE = 2;
+const DEFAULT_SPEED = 60;
+const DEFAULT_RULE = 110;
 const DEFAULT_CELL_MARGIN = 0;
 
 const calculateCanvasMetrics = (windowWidth: number, cellSize: number, cellMargin: number) => {
