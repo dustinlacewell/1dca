@@ -80,6 +80,8 @@ export function Canvas() {
       rendererRef.current = renderer;
 
       // Initial render
+      if (!canvasRef.current) return;
+
       const viewport = {
         width: canvasRef.current.width,
         height: canvasRef.current.height,
@@ -128,6 +130,8 @@ export function Canvas() {
       canvas.width = rect.width;
       canvas.height = rect.height;
 
+      if (!canvasRef.current) return;
+
       const viewport = {
         width: canvasRef.current.width,
         height: canvasRef.current.height,
@@ -167,6 +171,8 @@ export function Canvas() {
         maxVisibleGenerations
       }
     });
+
+    if (!canvasRef.current) return;
 
     const viewport = {
       width: canvasRef.current.width,
