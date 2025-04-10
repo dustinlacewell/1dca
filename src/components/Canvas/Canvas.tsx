@@ -1,144 +1,211 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
-import { Canvas2DRenderer } from '../../renderers/Canvas2DRenderer';
+import { BaseRenderer } from '../../renderers/BaseRenderer';
+import { createRenderer } from '../../renderers/RendererFactory';
 import './Canvas.scss';
 
-const Canvas: React.FC = () => {
+export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rendererRef = useRef<Canvas2DRenderer | null>(null);
-  const frameRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number>(0);
-  
-  const { 
-    cells, 
+  const rendererRef = useRef<BaseRenderer | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    cells,
     previousGenerations,
     generation,
+    isPlaying,
     cellSize,
     cellMargin,
     renderWidth,
     renderMargin,
-    isPlaying,
     speed,
     step,
-    maxVisibleGenerations
+    maxVisibleGenerations,
+    activeRenderer,
+    maxCells
   } = useStore();
 
-  // Cache color values
-  const colors = {
-    background: getComputedStyle(document.documentElement)
-      .getPropertyValue('--background').trim(),
-    primary: getComputedStyle(document.documentElement)
-      .getPropertyValue('--primary').trim()
-  };
-
-  // Initialize renderer
+  // Initialize renderer when renderer type changes
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    // Get the container's size
-    const container = canvas.parentElement;
+    const container = containerRef.current;
     if (!container) return;
 
-    // Create and initialize renderer
-    const renderer = new Canvas2DRenderer();
-    renderer.initialize(canvas);
-    
-    // Update viewport with initial settings
-    renderer.updateViewport({
-      cellSize,
-      cellMargin,
-      renderWidth,
-      renderMargin,
-      maxVisibleGenerations,
-      colors
-    });
+    // Clean up old renderer first
+    if (rendererRef.current) {
+      console.log('Disposing old renderer');
+      rendererRef.current.dispose();
+      rendererRef.current = null;
+    }
 
-    // Handle initial resize
+    // Get container dimensions
     const rect = container.getBoundingClientRect();
-    renderer.resize(rect.width, rect.height);
 
-    rendererRef.current = renderer;
+    // Create new canvas
+    const canvas = document.createElement('canvas');
+    canvas.className = 'canvas';
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+
+    // Remove any existing canvas
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
+    
+    // Add new canvas
+    container.appendChild(canvas);
+    canvasRef.current = canvas;
+
+    // Create new renderer
+    try {
+      console.log('Initializing renderer:', activeRenderer);
+      console.log('Initial state:', {
+        cells: cells.length,
+        previousGens: previousGenerations.length,
+        generation,
+        viewport: {
+          cellSize,
+          cellMargin,
+          maxCells,
+          renderWidth,
+          renderMargin,
+          maxVisibleGenerations
+        }
+      });
+      
+      const renderer = createRenderer(activeRenderer);
+      renderer.initialize(canvas);
+      rendererRef.current = renderer;
+
+      // Initial render
+      renderer.render({
+        cells,
+        previousGenerations,
+        generation,
+        viewport: {
+          cellSize,
+          cellMargin,
+          maxCells,
+          renderWidth,
+          renderMargin,
+          maxVisibleGenerations
+        }
+      });
+
+      console.log('Initial render complete');
+    } catch (e) {
+      console.error('Renderer initialization failed:', e);
+      console.error('Error details:', {
+        message: e instanceof Error ? e.message : String(e),
+        stack: e instanceof Error ? e.stack : undefined
+      });
+    }
 
     return () => {
-      renderer.dispose();
-      rendererRef.current = null;
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current = null;
+      }
     };
-  }, []); // Only run once on mount
-
-  // Handle viewport updates
-  useEffect(() => {
-    const renderer = rendererRef.current;
-    if (!renderer) return;
-
-    renderer.updateViewport({
-      cellSize,
-      cellMargin,
-      renderWidth,
-      renderMargin,
-      maxVisibleGenerations,
-      colors
-    });
-  }, [cellSize, cellMargin, renderWidth, renderMargin, maxVisibleGenerations, colors.background, colors.primary]);
+  }, [activeRenderer]);
 
   // Handle window resizing
   useEffect(() => {
-    const handleResize = () => {
-      const canvas = canvasRef.current;
-      const renderer = rendererRef.current;
-      if (!canvas || !renderer) return;
+    const canvas = canvasRef.current;
+    const renderer = rendererRef.current;
+    if (!canvas || !renderer) return;
 
+    const updateCanvasSize = () => {
       const rect = canvas.parentElement?.getBoundingClientRect();
       if (!rect) return;
 
-      renderer.resize(rect.width, rect.height);
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+
+      renderer.render({
+        cells,
+        previousGenerations,
+        generation,
+        viewport: {
+          cellSize,
+          cellMargin,
+          maxCells,
+          renderWidth,
+          renderMargin,
+          maxVisibleGenerations
+        }
+      });
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, [activeRenderer, cells, previousGenerations, generation, cellSize, cellMargin, maxCells, renderWidth, renderMargin, maxVisibleGenerations]);
 
-  // Render current state
+  // Handle state updates
   useEffect(() => {
     const renderer = rendererRef.current;
     if (!renderer) return;
-    renderer.render({ cells, previousGenerations, generation });
-  }, [cells, previousGenerations, generation]);
 
-  // Animation loop
+    console.log('State update:', {
+      cells: cells.length,
+      previousGens: previousGenerations.length,
+      generation,
+      viewport: {
+        cellSize,
+        cellMargin,
+        maxCells,
+        renderWidth,
+        renderMargin,
+        maxVisibleGenerations
+      }
+    });
+
+    renderer.render({
+      cells,
+      previousGenerations,
+      generation,
+      viewport: {
+        cellSize,
+        cellMargin,
+        maxCells,
+        renderWidth,
+        renderMargin,
+        maxVisibleGenerations
+      }
+    });
+  }, [cells, previousGenerations, generation, cellSize, cellMargin, maxCells, renderWidth, renderMargin, maxVisibleGenerations]);
+
+  // Handle animation frame updates
   useEffect(() => {
-    if (!isPlaying) return;
+    const renderer = rendererRef.current;
+    if (!renderer || !isPlaying) return;
+
+    let lastTime = 0;
+    let animationFrameId: number;
 
     const animate = (currentTime: number) => {
-      const renderer = rendererRef.current;
-      if (!renderer || !isPlaying) return;
-
-      const deltaTime = currentTime - lastTimeRef.current;
-      if (deltaTime >= 1000 / speed) {
+      if (currentTime - lastTime > 1000 / speed) {
         step();
-        lastTimeRef.current = currentTime;
+        lastTime = currentTime;
       }
-
-      frameRef.current = requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     };
 
-    lastTimeRef.current = performance.now();
-    frameRef.current = requestAnimationFrame(animate);
+    animationFrameId = requestAnimationFrame(animate);
 
     return () => {
-      if (frameRef.current) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
+      cancelAnimationFrame(animationFrameId);
     };
   }, [isPlaying, speed, step]);
 
   return (
-    <div className="canvas-container">
-      <canvas ref={canvasRef} className="canvas" />
-      <div className="generation-counter">Generation: {generation}</div>
+    <div ref={containerRef} className="canvas-container">
+      {/* Canvas will be created and managed by the effect */}
     </div>
   );
-};
+}
 
 export default Canvas;

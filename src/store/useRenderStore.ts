@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useSimulationStore } from './useSimulationStore';
+import { RendererType } from '../renderers/RendererFactory';
 
 const SIDEBAR_WIDTH = 300;
 
@@ -11,11 +12,13 @@ interface RenderState {
   renderWidth: number;
   renderMargin: number;
   maxVisibleGenerations: number;
+  activeRenderer: RendererType;
 
   // Actions
   setCellSize: (size: number) => void;
   setCellMargin: (margin: number) => void;
   updateCanvasSize: (windowWidth: number) => void;
+  setActiveRenderer: (type: RendererType) => void;
 }
 
 const DEFAULT_CELL_SIZE = 4;
@@ -50,6 +53,7 @@ export const useRenderStore = create<RenderState>((set, get) => {
     // Initial state
     cellSize: DEFAULT_CELL_SIZE,
     cellMargin: DEFAULT_CELL_MARGIN,
+    activeRenderer: 'canvas2d',
     ...initialMetrics,
 
     setCellSize: (size) => {
@@ -95,6 +99,8 @@ export const useRenderStore = create<RenderState>((set, get) => {
       useSimulationStore.getState().updateMaxCells(metrics.maxCells);
 
       set(metrics);
-    }
+    },
+
+    setActiveRenderer: (type) => set({ activeRenderer: type }),
   };
 });

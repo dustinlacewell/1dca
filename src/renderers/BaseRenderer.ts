@@ -5,6 +5,7 @@ export interface CellState {
   cells: boolean[];
   previousGenerations: boolean[][];
   generation: number;
+  viewport: ViewportOptions;
 }
 
 /**
@@ -13,13 +14,10 @@ export interface CellState {
 export interface ViewportOptions {
   cellSize: number;
   cellMargin: number;
+  maxCells: number;
   renderWidth: number;
   renderMargin: number;
   maxVisibleGenerations: number;
-  colors: {
-    background: string;
-    primary: string;
-  };
 }
 
 /**
@@ -35,16 +33,6 @@ export interface BaseRenderer {
    * Render the current state of the cellular automata
    */
   render: (state: CellState) => void;
-
-  /**
-   * Handle canvas resize events
-   */
-  resize: (width: number, height: number) => void;
-
-  /**
-   * Update viewport configuration (cell size, colors, etc.)
-   */
-  updateViewport: (options: ViewportOptions) => void;
 
   /**
    * Clean up any resources used by the renderer

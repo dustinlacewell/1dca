@@ -2,6 +2,7 @@ import React from 'react';
 import RulesGrid from './components/RulesGrid';
 import ButtonGroup from './components/ButtonGroup';
 import { useStore } from '../../store/useStore';
+import { hasWebGLSupport } from '../../renderers/RendererFactory';
 import './ControlsPanel.scss';
 
 const ControlsPanel: React.FC = () => {
@@ -10,7 +11,8 @@ const ControlsPanel: React.FC = () => {
     cellSize, 
     setCellSize,
     speed,
-    setSpeed
+    setSpeed,
+    activeRenderer
   } = useStore();
 
   return (
@@ -43,7 +45,7 @@ const ControlsPanel: React.FC = () => {
               type="range"
               id="speed"
               min="1"
-              max="200"
+              max="1000"
               value={speed}
               onChange={(e) => setSpeed(Number(e.target.value))}
             />
@@ -71,6 +73,21 @@ const ControlsPanel: React.FC = () => {
       <div className="control-section">
         <h2>Initialization</h2>
         <ButtonGroup type="initialization" />
+      </div>
+
+      <div 
+        className={`control-group renderer-toggle ${hasWebGLSupport() ? 'clickable' : ''}`}
+        onClick={() => {
+          console.log('Current renderer:', activeRenderer);
+          console.log('WebGL supported:', hasWebGLSupport());
+          if (!hasWebGLSupport()) return;
+          const newRenderer = activeRenderer === 'webgl' ? 'canvas2d' : 'webgl';
+          console.log('Switching to:', newRenderer);
+          useStore.getState().setActiveRenderer(newRenderer);
+        }}
+        style={{ cursor: hasWebGLSupport() ? 'pointer' : 'default' }}
+      >
+        <span>Renderer: {activeRenderer === 'webgl' ? 'WebGL' : 'Canvas 2D'}</span>
       </div>
     </div>
   );

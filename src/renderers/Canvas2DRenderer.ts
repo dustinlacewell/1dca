@@ -1,10 +1,9 @@
-import { BaseRenderer, CellState, ViewportOptions } from './BaseRenderer';
+import { BaseRenderer, CellState } from './BaseRenderer';
 
 export class Canvas2DRenderer implements BaseRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private dpr: number = 1;
-  private options: ViewportOptions | null = null;
 
   initialize(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
@@ -46,28 +45,27 @@ export class Canvas2DRenderer implements BaseRenderer {
     this.ctx.scale(this.dpr, this.dpr);
   }
 
-  updateViewport(options: ViewportOptions): void {
-    this.options = options;
+  updateViewport(options: any): void {
+    // Removed the options field
   }
 
   render(state: CellState): void {
-    if (!this.ctx || !this.canvas || !this.options) return;
+    if (!this.ctx || !this.canvas) return;
 
     const { cells, previousGenerations } = state;
     const { 
       cellSize, 
       cellMargin, 
       renderMargin,
-      maxVisibleGenerations,
-      colors 
-    } = this.options;
+      maxVisibleGenerations
+    } = state.viewport;
 
     // Clear the canvas with background color
-    this.ctx.fillStyle = colors.background;
+    this.ctx.fillStyle = '#1a1a1a'; // Dark background
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Set cell color
-    this.ctx.fillStyle = colors.primary;
+    this.ctx.fillStyle = '#4a9eff'; // Light blue
 
     // Helper for pixel-perfect cell rendering
     const fillCell = (x: number, y: number) => {

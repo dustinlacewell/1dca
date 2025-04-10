@@ -1,23 +1,28 @@
 import { create } from 'zustand';
+import { RendererType, hasWebGLSupport } from '../renderers/RendererFactory';
 
 const SIDEBAR_WIDTH = 300;
 
 interface AutomatonState {
+  // Simulation state
   cells: boolean[];
   previousGenerations: boolean[][];
   rule: number;
   ruleToggles: boolean[];
   isPlaying: boolean;
   generation: number;
-  cellSize: number;
-  cellMargin: number; // New: margin between cells
   speed: number;
   lastInitPattern: 'single' | 'random' | 'filled' | 'empty' | 'alternating';
+  
+  // Render state
+  cellSize: number;
+  cellMargin: number;
   availableWidth: number;
   maxCells: number;
   renderWidth: number;
   renderMargin: number;
   maxVisibleGenerations: number;
+  activeRenderer: RendererType;
   
   // Actions
   setCells: (cells: boolean[]) => void;
@@ -28,18 +33,19 @@ interface AutomatonState {
   incrementGeneration: () => void;
   resetGeneration: () => void;
   setCellSize: (size: number) => void;
-  setCellMargin: (margin: number) => void; // New: setter for margin
+  setCellMargin: (margin: number) => void;
   setSpeed: (speed: number) => void;
   step: () => void;
   initializePattern: (pattern: 'single' | 'random' | 'filled' | 'empty' | 'alternating') => void;
   setPresetRule: (ruleNumber: number) => void;
   updateCanvasSize: (windowWidth: number) => void;
+  setActiveRenderer: (type: RendererType) => void;
 }
 
 const DEFAULT_CELL_SIZE = 4;
 const DEFAULT_SPEED = 10;
 const DEFAULT_RULE = 30;
-const DEFAULT_CELL_MARGIN = 0; // New: default to no margin
+const DEFAULT_CELL_MARGIN = 0;
 
 const calculateCanvasMetrics = (windowWidth: number, cellSize: number, cellMargin: number) => {
   const availableWidth = windowWidth - SIDEBAR_WIDTH;
@@ -63,18 +69,37 @@ export const useStore = create<AutomatonState>((set, get) => {
   const initialMetrics = calculateCanvasMetrics(window.innerWidth, DEFAULT_CELL_SIZE, DEFAULT_CELL_MARGIN);
   
   return {
-    cells: new Array(initialMetrics.maxCells).fill(false),
+    // Initial simulation state
+    cells: (() => {
+      const cells = new Array(initialMetrics.maxCells).fill(false);
+      cells[Math.floor(initialMetrics.maxCells / 2)] = true;
+      return cells;
+    })(),
     previousGenerations: [],
     rule: DEFAULT_RULE,
-    ruleToggles: new Array(8).fill(false),
+    ruleToggles: (() => {
+      const toggles = new Array(8).fill(false);
+      // Set rule 30 toggles
+      for (let i = 0; i < 8; i++) {
+        toggles[i] = Boolean(DEFAULT_RULE & (1 << i));
+      }
+      return toggles;
+    })(),
     isPlaying: false,
     generation: 0,
-    cellSize: DEFAULT_CELL_SIZE,
-    cellMargin: DEFAULT_CELL_MARGIN,
     speed: DEFAULT_SPEED,
     lastInitPattern: 'single',
-    ...initialMetrics,
-
+    
+    // Initial render state
+    cellSize: DEFAULT_CELL_SIZE,
+    cellMargin: DEFAULT_CELL_MARGIN,
+    availableWidth: initialMetrics.availableWidth,
+    maxCells: initialMetrics.maxCells,
+    renderWidth: initialMetrics.renderWidth,
+    renderMargin: initialMetrics.renderMargin,
+    maxVisibleGenerations: initialMetrics.maxVisibleGenerations,
+    activeRenderer: hasWebGLSupport() ? 'webgl' : 'canvas2d',
+    
     setCells: (cells) => set({ cells }),
 
     setRule: (rule) => set({ rule }),
@@ -235,6 +260,11 @@ export const useStore = create<AutomatonState>((set, get) => {
         cells: newCells,
         ...metrics
       });
-    }
+    },
+
+    setActiveRenderer: (type) => {
+      console.log('Store: Setting renderer to', type);
+      set({ activeRenderer: type });
+    },
   };
 });

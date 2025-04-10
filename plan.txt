@@ -1,51 +1,58 @@
-# Plan for Decoupling Rendering from Core Logic
+# WebGL Renderer Implementation Plan for 1D Cellular Automata Explorer
 
-## Current Architecture
-- Canvas.tsx handles all rendering logic directly using Canvas2D API
-- State management in useStore.ts contains both simulation and rendering-related state
-- No abstraction between rendering and core simulation logic
+## Overview
+Create a high-performance WebGL renderer to replace the Canvas2D implementation while maintaining the same interface.
 
-## Decoupling Plan
+## Technical Steps
 
-### Phase 1: Create Renderer Interface and Canvas Implementation
-1. Create a new `src/renderers` directory
-2. Define base renderer interface in `src/renderers/BaseRenderer.ts`
-   - Core methods:
-     - initialize(canvas: HTMLCanvasElement): void
-     - render(state: CellState): void  // Takes entire state, not individual cells
-     - resize(width: number, height: number): void
-     - updateViewport(options: ViewportOptions): void
-   - Shared types:
-     - CellState (cells data, generation count)
-     - ViewportOptions (cell size, margins, etc)
-3. Create Canvas2D implementation in `src/renderers/Canvas2DRenderer.ts`
-   - Implement full-frame rendering approach
-   - Handle DPI scaling and pixel-perfect alignment
-4. Update Canvas.tsx to use Canvas2DRenderer
-   - Remove direct canvas manipulation
-   - Pass complete state to renderer each frame
+1. Create WebGL Infrastructure
+   - Create WebGLRenderer class implementing BaseRenderer interface
+   - Set up WebGL context with optimal settings
+   - Initialize vertex and fragment shaders
+   - Create vertex buffer for quad rendering
 
-### Phase 2: Separate Rendering State
-1. Split useStore.ts into two parts:
-   - Core simulation state (cells, rules, generation)
-   - Rendering state (dimensions, colors, view options)
-2. Create separate hooks:
-   - useSimulationStore.ts for core logic
-   - useRenderStore.ts for render settings
-3. Update components to use appropriate stores
+2. Design Shader Programs
+   - Vertex shader: Transform quad coordinates
+   - Fragment shader: 
+     - Use texture to store cell states
+     - Sample texture to render cells
+     - Handle cell colors and margins
 
-### Phase 3: Add WebGL Infrastructure
-1. Create WebGL renderer implementation
-2. Add renderer factory/selection logic
-3. Add GPU capability detection
-4. Add renderer switching mechanism
+3. Texture Management
+   - Create texture for current generation and history
+   - Use R8 or R8UI texture format for binary cell states
+   - Implement efficient texture updates
 
-## Implementation Steps
+4. Optimization Techniques
+   - Use instanced rendering for cells
+   - Minimize texture updates
+   - Use uniform buffers for viewport settings
+   - Implement texture atlasing for history
 
-We'll execute this plan phase by phase, with each phase broken down into small, reviewable steps. Let's begin with Phase 1, Step 1:
+5. Implementation Order
+   a. Basic WebGL setup and context initialization
+   b. Simple quad rendering with solid color
+   c. Texture-based cell state rendering
+   d. Add support for previous generations
+   e. Implement viewport options (cell size, margins)
+   f. Optimize performance with instancing
+   g. Add high DPI support
 
-1. Create renderers directory and base interface
-2. Review and iterate on interface design
-3. Move forward with subsequent steps based on feedback
+6. Testing & Validation
+   - Compare performance with Canvas2D renderer
+   - Verify visual consistency
+   - Test edge cases (resize, large states)
+   - Profile memory usage
 
-Would you like me to proceed with implementing Phase 1, Step 1?
+## Performance Considerations
+- Use WebGL 2 for better texture formats and features
+- Minimize CPU-GPU data transfers
+- Use power-of-two textures for compatibility
+- Batch render calls
+- Use appropriate texture filtering modes
+
+## Integration Steps
+1. Create new WebGLRenderer.ts file
+2. Update renderer factory in useRenderStore
+3. Add WebGL feature detection
+4. Implement fallback to Canvas2D if needed
